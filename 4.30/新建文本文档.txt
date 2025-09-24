@@ -1,0 +1,176 @@
+//头文件名：observe.h
+# include "math.h"
+# include "string.h"
+struct Point { int x,y; };
+struct Rect
+{intleft,top,right,bottom; intWidth() { return right-left; }
+int Height() { return bottom-top; }
+};
+class point3D //3维点及向量的类
+{
+public:
+double x,y,z;
+private:
+static Rect view; //视区数据
+private:
+static double left,top,right,bottom,sc,dx,dy; //窗口数据和窗视变换的数据
+static void adjust()
+{dx=view.Width()/(right-left);dy=view.Height()/(top-bottom);
+sc=(dx<dy)?dx:dy;
+dx=(view.left+view.right-(left+right)*sc)/2;
+dy=(view.top+view.bottom+(top+bottom)*sc)/2;
+}
+public:
+point3D(double x1=0,double y1=0,double z1=0) { x=x1; y=y1; z=z1; }
+static void setWindow(double L,double T,double R,double B) //设置窗口大小
+{left=L; top=T; right=R; bottom=B; adjust(); }
+static void setViewport(Rect rect) { view=rect; adjust(); } //设置视区大小
+static void getWindow(double &L,double &T,double &R,double &B)
+{L=left; T=top; R=right; B=bottom; }
+static void getViewport(Rect &rect) { rect=view; }
+double length( ) { double t=sqrt(x*x+y*y+z*z); return t; } //向量长度
+point3D unitize( ) { double t=length( ); if(t<1e-9) t=1; return *this*(1/t); } //单位化
+point3D operator+(point3D b) const { return point3D(x+b.x,y+b.y,z+b.z); }
+point3D operator-(point3D b) const { return point3D(x-b.x,y-b.y,z-b.z); }
+double operator*(point3D b) const { return x*b.x+y*b.y+z*b.z; } //向量内积
+point3D operator*(double t) const { return point3D(x*t,y*t,z*t); } //向量数乘
+point3D operator^(point3D b)const{return point3D(y*b.z-z*b.y,z*b.x-x*b.z,x*b.y-y*b.x);} //叉乘
+Point toPoint() const { Point p={round(x*sc+dx),round(-y*sc+dy)}; return p; } //窗视变换
+static point3D byPoint(Point p) { return point3D((p.x-dx)/sc,(dy-p.y)/sc,0); } //窗视逆变换
+};
+double point3D::left=-100,point3D::top=100,point3D::right=100,point3D::bottom=-100;
+double point3D::sc=1,point3D::dx=100,point3D::dy=100;
+Rect point3D::view={0,0,200,200};
+//头文件名：observe.h
+# include "math.h"
+# include "string.h"
+struct Point { int x,y; };
+struct Rect
+{int left,top,right,bottom; int Width() { return right-left; }
+int Height() { return bottom-top; }
+};
+class point3D //3维点及向量的类
+{
+public:
+double x,y,z;
+private:
+static Rect view; //视区数据
+private:
+static double left,top,right,bottom,sc,dx,dy; //窗口数据和窗视变换的数据
+static void adjust()
+{dx=view.Width()/(right-left);dy=view.Height()/(top-bottom);
+sc=(dx<dy)?dx:dy;
+dx=(view.left+view.right-(left+right)*sc)/2;
+dy=(view.top+view.bottom+(top+bottom)*sc)/2;
+}
+public:
+point3D(double x1=0,double y1=0,double z1=0) { x=x1; y=y1; z=z1; }
+static void setWindow(double L,double T,double R,double B) //设置窗口大小
+{left=L; top=T; right=R; bottom=B; adjust(); }
+static void setViewport(Rect rect) { view=rect; adjust(); } //设置视区大小
+static void getWindow(double &L,double &T,double &R,double &B)
+{L=left; T=top; R=right; B=bottom; }
+static void getViewport(Rect &rect) { rect=view; }
+double length( ) { double t=sqrt(x*x+y*y+z*z); return t; } //向量长度
+point3D unitize( ) { double t=length( ); if(t<1e-9) t=1; return *this*(1/t); } //单位化
+point3D operator+(point3D b) const { return point3D(x+b.x,y+b.y,z+b.z); }
+point3D operator-(point3D b) const { return point3D(x-b.x,y-b.y,z-b.z); }
+double operator*(point3D b) const { return x*b.x+y*b.y+z*b.z; } //向量内积
+point3D operator*(double t) const { return point3D(x*t,y*t,z*t); } //向量数乘
+point3D operator^(point3D b)const{return point3D(y*b.z-z*b.y,z*b.x-x*b.z,x*b.y-y*b.x);} //叉乘
+Point toPoint() const { Point p={round(x*sc+dx),round(-y*sc+dy)}; return p; } //窗视变换
+static point3D byPoint(Point p) { return point3D((p.x-dx)/sc,(dy-p.y)/sc,0); } //窗视逆变换
+};
+double point3D::left=-100,point3D::top=100,point3D::right=100,point3D::bottom=-100;
+double point3D::sc=1,point3D::dx=100,point3D::dy=100;
+Rect point3D::view={0,0,200,200};
+class observe3D //图形变换的类
+{ private: double T0[4][4],T1[4][4],T[4][4]; void combine( ); //计算T0*T1保存到T
+public:
+observe3D( ) { initialize( ); }
+void initialize( ); //初始变换：右手系变为左手系
+void translate(double x,double y,double z); //添加平移变换，平移量(x,y,z) (右手系向量)
+void translate(point3D mv) { translate(mv.x,mv.y,mv.z); }
+void scale(double sx,double sy,double sz); //添加比例变换
+void scale(double t) { scale(t,t,t); }
+void rotate(double sita,double x,double y,double z); //添加绕(x,y,z)轴(右手系向量)的旋转变换
+void rotate(double sita,point3D n) { rotate(sita,n.x,n.y,n.z); } //旋转变换，n(右手系向量)
+void lookAt(point3D p,point3D up); //观察变换，观察方向p，向上方向up (右手系向量)
+void lookAt(double x,double y,double z,double ux,double uy,double uz) // (右手系向量)
+{lookAt(point3D(x,y,z),point3D(ux,uy,uz)); }
+point3D trans(point3D p) const; //对p进行综合变换,返回变换后的点(右手系到左手系)
+};
+void multi(double A[ ][3],double B[ ][3],double C[ ][3],bool tran=false) //计算C=A*B(^T)
+{for(int i=0;i<3;i++) for(int j=0;j<3;j++)
+{double t=0; for(int k=0;k<3;k++) t+=A[i][k]*(tran?B[j][k]:B[k][j]); C[i][j]=t; } }
+void observe3D::combine( )
+{for(int i=0;i<4;i++) for(int j=0;j<4;j++)
+{double t=0; for(int k=0;k<4;k++) t+=T0[i][k]*T1[k][j]; T[i][j]=t; } }
+void observe3D::initialize( )
+{memset(T0,0,sizeof(T0)); memset(T1,0,sizeof(T1)); memset(T,0,sizeof(T));
+for(int i=0;i<4;i++) T0[i][i]=T1[i][i]=T[i][i]=1; T0[2][2]=T[2][2]= -1; }
+void observe3D::translate(double x,double y,double z)
+{z=-z; T0[3][0]+=x; T0[3][1]+=y; T0[3][2]+=z; combine(); } // (x,y,z)先变成左手系向量(x,y,-z)
+void observe3D::scale(double sx,double sy,double sz)
+{for(int i=0;i<4;i++) { T0[i][0]*=sx; T0[i][1]*=sy; T0[i][2]*=sz; } combine(); }
+void observe3D::rotate(double sita,double x,double y,double z)
+{double A[3][3]={1},B[3][3]={0},C[3][3],t[3]; int i,j,k; z=-z; sita=-sita;// (x,y,z)变成(x,y,-z),sita变号
+if(x*x+y*y<1e-14) { double d=1; if(z<0) d=-1; A[1][1]=A[2][2]=d; }
+else {point3D af(y,-x,0),bt(x*z,y*z,-x*x-y*y),gm(x,y,z),tp;
+tp=af.unitize(); A[0][0]=tp.x; A[1][0]=tp.y; A[2][0]=tp.z;
+tp=bt.unitize(); A[0][1]=tp.x; A[1][1]=tp.y; A[2][1]=tp.z;
+tp=gm.unitize(); A[0][2]=tp.x; A[1][2]=tp.y; A[2][2]=tp.z; }
+B[0][0]=B[1][1]=cos(sita); B[0][1]=sin(sita); B[1][0]=-B[0][1]; B[2][2]=1;
+multi(A,B,C); multi(C,A,B,true);
+for(i=0;i<4;i++) {for(j=0;j<3;j++) for(t[j]=k=0;k<3;k++) t[j]+=T0[i][k]*B[k][j];memcpy(T0[i],t,24); } combine(); }
+void observe3D::lookAt(point3D p,point3D up)
+{point3D v1,v2,v3; p.z=-p.z; up.z=-up.z; v1=up^p; // p和up先变成左手系向量
+v2=(p^v1).unitize(); v1=v1.unitize(); v3=p.unitize(); T1[0][3]=T1[1][3]=T1[2][3]=0; T1[3][3]=1; T1[0][0]=v1.x; T1[1][0]=v1.y; T1[2][0]=v1.z; T1[3][0]=0; T1[0][1]=v2.x; T1[1][1]=v2.y;
+T1[2][1]=v2.z; T1[3][1]=0; T1[0][2]=v3.x; T1[1][2]=v3.y; T1[2][2]=v3.z; T1[3][2]=0; combine(); }point3D observe3D::trans(point3D p) const
+{double x=T[3][0],y=T[3][1],z=T[3][2]; x+=p.x*T[0][0]+p.y*T[1][0]+p.z*T[2][0];
+y+= p.x*T[0][1]+p.y*T[1][1]+p.z*T[2][1]; z+=p.x*T[0][2]+p.y*T[1][2]+p.z*T[2][2];
+return point3D(x,y,z); }
+//------------------------------------------point3D、observ3D 定义结束
+
+
+//头文件名：testfunction.h
+# include "observe.h"
+double f1(double x,double y)
+{x/=3; y/=3; double t=3*(1-x)*(1-x)*exp(-x*x-(y+1)*(y+1));
+t=t-10*(x/5-x*x*x-y*y*y*y*y)*exp(-x*x-y*y)-exp(-(x+1)*(x+1)-y*y)/3; return t; }
+double f2(double x,double y)
+{return 3*exp(-(x*x+y*y)*0.01)*sin((x*x+y*y)/12); }
+const int M=30,N=30; //网格分割数
+double (*ff)(double,double)=f1; //曲面函数指针
+
+
+//图形程序ege7_1.cpp 网格图的观察变换
+//鼠标左击画网格图1，右击画网格图2
+# include <graphics.h>
+# include "testfunction.h"
+void process(double (*f)(double,double),observe3D ob);
+int main( )
+{initgraph(640,480,INIT_RENDERMANUAL);
+setbkcolor(WHITE); setcolor(BLUE); mouse_msg msg;
+Rect rc={0,0,639,479}; point3D::setViewport(rc);point3D::setWindow(-12,12,12,-12); //视区窗口
+observe3D ob; ob.lookAt(1,-1,-2,0,1,0); process(f1,ob); //设置观察角度
+bool leftdown,rightdown;
+for( ; is_run( ) ; delay_fps(60))
+{leftdown=rightdown=false;
+while(mousemsg())
+{msg=getmouse();
+if(msg.is_left()&&msg.is_down()) leftdown=true;
+if(msg.is_right()&&msg.is_down()) rightdown=true;
+}
+if(leftdown) process(f1,ob); //鼠标左击画网格图1
+else if(rightdown) process(f2,ob); //鼠标右击画网格图2
+} closegraph(); return 0;
+}
+void process(double (*f)(double,double),observe3D ob)
+{int k,i; double x,x2,z,z2,x0=-10,z0=-10,dx=20.0/M,dz=20.0/N;Point P1,P2,P3; cleardevice();
+for(k=0;k<=M;k++) for(i=0;i<=N;i++) //逐个画网格
+{x=x0+k*dx; z=z0+i*dz; x2=x+dx; z2=z+dz; P1=ob.trans(point3D(x,f(x,z),z)).toPoint();
+P2=ob.trans(point3D(x,f(x,z2),z2)).toPoint(); P3=ob.trans(point3D(x2,f(x2,z),z)).toPoint();
+if(i<N) line(P1.x,P1.y,P2.x,P2.y); if(k<M) line(P1.x,P1.y,P3.x,P3.y);
+}
+}
